@@ -12,3 +12,11 @@ IsaacLab envs with tesolo delto for RL and control experiments
 ```bash
 ./isaaclab.sh -p scripts/my_examples/tesolo_delto_UR_env/setup_env.py 
 ```
+
+## Описание
+
+1. `envs/` - среды isaaclab
+
+2. `robots/` - usd файлы роботов
+
+3. `scripts` - скрипты для управленяи

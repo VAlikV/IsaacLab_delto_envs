@@ -2,16 +2,12 @@ import argparse
 
 from isaaclab.app import AppLauncher
 
-# add argparse arguments
-parser = argparse.ArgumentParser(description="Tutorial on using the interactive scene interface.")
-parser.add_argument("--num_envs", type=int, default=2, help="Number of environments to spawn.")
-# append AppLauncher cli args
-AppLauncher.add_app_launcher_args(parser)
-# parse the arguments
-args_cli = parser.parse_args()
-
 # launch omniverse app
-app_launcher = AppLauncher(args_cli)
+app_launcher = AppLauncher(
+    headless=False,
+    enable_cameras=True,
+    enable_livestream=False,
+)
 simulation_app = app_launcher.app
 
 """Rest everything follows."""
@@ -22,19 +18,22 @@ from delto_env import DeltoEnv, DeltoEnvCfg
 import time
 import os
 import numpy as np
+# import cv2
+from PIL import Image
+import matplotlib.pyplot as plt
 
 ##
 # Pre-defined configs
 ##
 
 import socket  
-# IP-адрес и порт сервера  
 
 
 if __name__ == "__main__":
     
-    server_ip = '192.168.68.122' 
-    # server_ip = '127.0.0.1'  
+    # Для управления по UDP
+    # server_ip = '192.168.68.122' 
+    server_ip = '127.0.0.1'  
     server_port = 8081  
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
@@ -54,12 +53,16 @@ if __name__ == "__main__":
     start = torch.zeros([env.cfg.num_env, env.cfg.action_space])
 
     obs, rewards, dones, info, _ = env.step(start)
-
-    # pos = torch.tensor([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0, 0.0,
-    #       0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0,
-    #       -1.0, 0.0, -3.0, -3.0]])
     
     pos = torch.zeros([env.cfg.num_env, env.cfg.action_space])
+
+    # Для отрисовки кадров
+    plt.ion()
+    fig, ax = plt.subplots()
+    im = None
+    fig.canvas.draw()
+    bg = fig.canvas.copy_from_bbox(fig.bbox)
+    i = 0
 
     while(True):
         
@@ -68,7 +71,7 @@ if __name__ == "__main__":
 
             data = list(map(float, (str(data)[3:-2].split(", "))))
 
-            print(data)
+            # print(data)
             pos[:,0:20] = torch.tensor(data)
             
         except BlockingIOError:
@@ -83,8 +86,25 @@ if __name__ == "__main__":
         # print("Flags: ", obs["state"]["contact_flags"])
         # print("Tips pos: ", obs["state"]["finger_tips_pos"])
         # print("Hand open: ", obs["state"]["hand_open"])
-        print("Reward", rewards)
+        # print("Reward", rewards)
+        # print(obs["rgb"])
 
+        arr = obs["rgb"][0].cpu().numpy()
+
+        fig.canvas.restore_region(bg)
+        if im is None:
+            im = ax.imshow(arr, animated=True)
+            ax.axis('off')
+        else:
+            im.set_data(arr)
+            ax.draw_artist(im)
+
+        fig.canvas.blit(fig.bbox)
+        fig.canvas.flush_events()
+
+
+        print(i)
+        i += 1
         print("====================================")
 
         time.sleep(0.05)
